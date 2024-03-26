@@ -61,81 +61,70 @@ def train_ZINC(model, optimizer, train_loader, val_loader, device, num_epochs, m
 
 def main():
 
-    parser = argparse.ArgumentParser()
-    
+    batch_size=16
+    k=30
 
-    parser.add_argument('--n_layers', help="Enter the number of GAD layers", type = int)
-    parser.add_argument('--hid_dim', help="Enter the hidden dimensions", type = int)
-    parser.add_argument('--dropout', help="Enter the value of the dropout", type = int, default=0)
-    parser.add_argument('--readout', help="Enter the readout agggregator", type = str, default='mean')
-
-    
-    parser.add_argument('--use_diffusion', help="Enter the use_diffusion", type = bool)
-    parser.add_argument('--diffusion_method', help="Enter the diffusion layer solving scheme ", type = str)
-    parser.add_argument('--k', help="Enter the num of eigenvector for spectral scheme", type = int)
-
-    parser.add_argument('--aggregators', help="Enter the aggregators", type = str)
-    parser.add_argument('--scalers', help="Enter the scalers", type = str)
-
-    parser.add_argument('--use_edge_fts', help="Enter true if you want to use the edge_fts", type = bool)
-    parser.add_argument('--use_graph_norm', help="Enter true if you want to use graph_norm", type = bool ,default=True)
-    parser.add_argument('--use_batch_norm', help="Enter true if you want to use batch_norm", type = bool ,default=True)
-    parser.add_argument('--use_residual', help="Enter true if you want to use residual connection", type = bool)
-
-    parser.add_argument('--type_net', help="Enter the type_net for DGN layer", type = str)
-    parser.add_argument('--towers', help="Enter the num of towers for DGN_tower", type=int)
+    hid_dim=65
+    use_graph_norm=True
+    use_batch_norm=True
+    dropout=0
+    readout='mean'
+    aggregators='mean dir_der max min'
+    scalers='identity amplification attenuation'
+    use_edge_fts=True
+    towers=5
+    type_net='tower'
+    use_residual=True
+    use_diffusion=True
+    diffusion_method='implicit'
+    n_layers=4
 
 
+    lr=1e-3
+    weight_decay=3e-6
+    num_epochs=300
+    min_lr=1e-5
 
-    
-    parser.add_argument('--num_epochs', help="Enter the num of epochs", type = int)
-    parser.add_argument('--batch_size', help="Enter the batch size", type = int)
-    parser.add_argument('--lr', help="Enter the learning rate", type = float)
-    parser.add_argument('--weight_decay', help="Enter the weight_decay", type = float)
-    parser.add_argument('--min_lr', help="Enter the minimum lr", type = float)
-    
-    args = parser.parse_args()
-    
     print("downloading the dataset (ZINC)")
-    dataset_train = ZINC(root='/', subset=True)
-    dataset_val = ZINC(root='/', subset=True, split='val')
-    dataset_test = ZINC(root='/', subset=True, split='test')
-    
+    dataset_train = ZINC(root='/tmp/a', subset=True)
+    dataset_val = ZINC(root='/tmp/a', subset=True, split='val')
+    dataset_test = ZINC(root='/tmp/a', subset=True, split='test')
+
     print("dataset_train contains ", len(dataset_train), "samples")
     print("dataset_val contains ", len(dataset_val), "samples")
     print("dataset_test contains ", len(dataset_test), "samples")
-    
+
     print("data preprocessing: calculate and store the vector field F, etc.")
 
     D, avg_d = average_node_degree(dataset_train)
-    dataset_train = preprocessing_dataset(dataset_train, args.k)
-    dataset_val = preprocessing_dataset(dataset_val, args.k)
-    dataset_test = preprocessing_dataset(dataset_test, args.k)
-    
+    dataset_train = preprocessing_dataset(dataset_train, k)
+    dataset_val = preprocessing_dataset(dataset_val, k)
+    dataset_test = preprocessing_dataset(dataset_test, k)
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    train_loader = DataLoader(dataset = dataset_train, batch_size=args.batch_size, shuffle=True) 
-    val_loader = DataLoader(dataset = dataset_val, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(dataset =  dataset_test, batch_size=args.batch_size, shuffle=False)
+
+    train_loader = DataLoader(dataset = dataset_train, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(dataset = dataset_val, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(dataset =  dataset_test, batch_size=batch_size, shuffle=False)
 
     print("create GAD model")
-    
-    model = GAD(num_atom_type = 28, num_bond_type = 4, hid_dim = args.hid_dim, graph_norm = args.use_graph_norm, 
-               batch_norm = args.use_batch_norm, dropout = args.dropout, readout = args.readout, aggregators = args.aggregators,
-               scalers = args.scalers, edge_fts = args.use_edge_fts, avg_d = avg_d, D = D, device = device, towers= args.towers,
-               type_net = args.type_net, residual = args.use_residual, use_diffusion = args.use_diffusion, 
-               diffusion_method = args.diffusion_method, k = args.k, n_layers = args.n_layers)
-    
+
+    model = GAD(num_atom_type = 28, num_bond_type = 4, hid_dim = hid_dim, graph_norm = use_graph_norm,
+               batch_norm = use_batch_norm, dropout = dropout, readout = readout, aggregators = aggregators,
+               scalers = scalers, edge_fts = use_edge_fts, avg_d = avg_d, D = D, device = device, towers= towers,
+               type_net = type_net, residual = use_residual, use_diffusion = use_diffusion,
+               diffusion_method = diffusion_method, k = k, n_layers = n_layers)
+
 
     model = model.to(device)
-    
-    optimizer = opt.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    
-    train_ZINC(model, optimizer, train_loader, val_loader, device, num_epochs = args.num_epochs, min_lr = args.min_lr)
-    
+
+    optimizer = opt.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    train_ZINC(model, optimizer, train_loader, val_loader, device, num_epochs = num_epochs, min_lr = min_lr)
+
     print("Uploading the best model")
 
-    model_ = torch.load('model.pth')
+    model_ = torch.load('/tmp/a/GAN_train/model.pth')
 
     test_mae = evaluate_network(model_, test_loader, device)
     val_mae = evaluate_network(model_, val_loader, device)
@@ -146,5 +135,5 @@ def main():
     print("Best Val MAE: {:.4f}".format(val_mae))
     print("Best Test MAE: {:.4f}".format(test_mae))
 
+
 main()
-   

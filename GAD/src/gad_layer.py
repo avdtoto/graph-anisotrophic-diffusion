@@ -26,7 +26,7 @@ class GAD_layer(nn.Module):
         self.use_diffusion = use_diffusion
         if self.use_diffusion:
             self.diffusion_layer = Diffusion_layer(hid_dim, method = diffusion_method, k = k, device = device)
-            self.MLP_last = MLP([2*hid_dim, hid_dim], dropout = False)
+            self.MLP_last = MLP([4*hid_dim, hid_dim], dropout = False)
             
         self.residual = residual
 
@@ -34,9 +34,16 @@ class GAD_layer(nn.Module):
 
         if self.use_diffusion:
   
-            diffusion_out  =  self.diffusion_layer(node_fts, node_deg_vec, node_deg_mat, lap_mat, k_eig_val, k_eig_vec, num_nodes, batch_idx) 
-            dgn_out         = self.DGN_layer(diffusion_out, edge_fts, edge_index, F_norm_edge, F_dig, node_deg_vec, norm_n)
-            output          = torch.cat((diffusion_out, dgn_out), dim=1)
+            diffusion_out  =  self.diffusion_layer(node_fts, node_deg_vec, node_deg_mat, lap_mat, k_eig_val, k_eig_vec, num_nodes, batch_idx)
+
+            dgn_outputs = []
+
+            for i in range(len(F_norm_edge)):
+                dgn_outputs.append(self.DGN_layer(diffusion_out, edge_fts, edge_index, F_norm_edge[i], F_dig[i], node_deg_vec, norm_n))
+
+            dgn_combined_out = torch.cat(dgn_outputs, dim=1)
+
+            output          = torch.cat((diffusion_out, dgn_combined_out), dim=1)
             output          = self.MLP_last(output)
         else:
             output          = self.DGN_layer(node_fts, edge_fts, edge_index, F_norm_edge, F_dig, node_deg_vec, norm_n)

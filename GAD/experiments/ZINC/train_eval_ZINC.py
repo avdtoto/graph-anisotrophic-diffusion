@@ -28,9 +28,12 @@ def evaluate_network(model, data_loader, device):
 
             lap_mat_sparse = get_laplacian(batched_graph.edge_index)
             lap_mat = to_dense_adj(edge_index = lap_mat_sparse[0], edge_attr = lap_mat_sparse[1], max_num_nodes = num_nodes)[0].to(device)
-   
-            F_norm_edge = batched_graph.F_norm_edge.to(device)
-            F_dig = batched_graph.F_dig.to(device)
+
+            F_norm_edge = []
+            F_dig = []
+            for i in range(len(batched_graph.F_norm_edge)):
+                F_norm_edge.append(batched_graph.F_norm_edge[i].to(device))
+                F_dig.append(batched_graph.F_dig[i].to(device))
             
             edge_index = batched_graph.edge_index.to(device)
             batch_idx = batched_graph.batch.to(device)
@@ -77,10 +80,13 @@ def train_epoch(model ,data_loader, optimizer, device, loss_fn):
             lap_mat_sparse = get_laplacian(batched_graph.edge_index)
             lap_mat = to_dense_adj(edge_index = lap_mat_sparse[0], edge_attr = lap_mat_sparse[1], max_num_nodes = num_nodes)[0].to(device)
 
-        
-            F_norm_edge = batched_graph.F_norm_edge.to(device)
-            F_dig = batched_graph.F_dig.to(device)
-     
+            F_norm_edge = []
+            F_dig = []
+
+            for i in range(len(batched_graph.F_norm_edge)):
+                F_norm_edge.append(batched_graph.F_norm_edge[i].to(device))
+                F_dig.append(batched_graph.F_dig[i].to(device))
+
             edge_index = batched_graph.edge_index.to(device)
             batch_idx = batched_graph.batch.to(device)
 
