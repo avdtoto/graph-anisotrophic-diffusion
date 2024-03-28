@@ -16,7 +16,7 @@ def preprocessing_dataset(dataset, num_of_eigenvectors):
     data_dic = {}
 
     # Iterate through the first two elements of the dataset (for demonstration)
-    for index in range(2):
+    for index in range(len(dataset)):
 
         # Convert dataset element to dictionary
         data_dic[index] = dataset[index].to_dict()
