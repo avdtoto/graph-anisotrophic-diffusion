@@ -26,7 +26,7 @@ class GAD_layer(nn.Module):
         self.use_diffusion = use_diffusion
         if self.use_diffusion:
             self.diffusion_layer = Diffusion_layer(hid_dim, method = diffusion_method, k = k, device = device)
-            self.MLP_last = MLP([4*hid_dim, hid_dim], dropout = False)
+            self.MLP_last = MLP([3*hid_dim, hid_dim], dropout = False)
             
         self.residual = residual
 
