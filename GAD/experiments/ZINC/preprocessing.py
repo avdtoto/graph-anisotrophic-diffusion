@@ -63,8 +63,8 @@ def preprocessing_dataset(dataset, num_of_eigenvectors):
         data_dic[index]["k_eig_vec"] = k_eig_vec
         data_dic[index]["k_eig_val"] = k_eig_val
 
-        # Calculate the Fiedler vector - for the three smallest eigenvalues, construct a vector field
-        vec_idxs = [1, 2, 3] # List of eigenvector indices
+        # Calculate the Fiedler vector - for the two smallest eigenvalues, construct a vector field
+        vec_idxs = [1, 2] # List of eigenvector indices
 
         data_dic[index]['F_norm_edge'] = []
         data_dic[index]['F_dig'] = []
